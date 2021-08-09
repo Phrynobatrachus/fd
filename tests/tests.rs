@@ -1241,55 +1241,55 @@ fn test_exec() {
 
         te.assert_output(
             &["foo", "--exec", "echo", "{}"],
-            "a.foo
-            one/b.foo
-            one/two/C.Foo2
-            one/two/c.foo
-            one/two/three/d.foo
-            one/two/three/directory_foo",
+            "./a.foo
+            ./one/b.foo
+            ./one/two/C.Foo2
+            ./one/two/c.foo
+            ./one/two/three/d.foo
+            ./one/two/three/directory_foo",
         );
 
         te.assert_output(
             &["foo", "--exec", "echo", "{.}"],
-            "a
-            one/b
-            one/two/C
-            one/two/c
-            one/two/three/d
-            one/two/three/directory_foo",
+            "./a
+            ./one/b
+            ./one/two/C
+            ./one/two/c
+            ./one/two/three/d
+            ./one/two/three/directory_foo",
         );
 
         te.assert_output(
             &["foo", "--exec", "echo", "{/}"],
-            "a.foo
-            b.foo
-            C.Foo2
-            c.foo
-            d.foo
-            directory_foo",
+            "./a.foo
+            ./b.foo
+            ./C.Foo2
+            ./c.foo
+            ./d.foo
+            ./directory_foo",
         );
 
         te.assert_output(
             &["foo", "--exec", "echo", "{/.}"],
-            "a
-            b
-            C
-            c
-            d
-            directory_foo",
+            "./a
+            ./b
+            ./C
+            ./c
+            ./d
+            ./directory_foo",
         );
 
         te.assert_output(
             &["foo", "--exec", "echo", "{//}"],
-            ".
-            one
-            one/two
-            one/two
-            one/two/three
-            one/two/three",
+            "./.
+            ./one
+            ./one/two
+            ./one/two
+            ./one/two/three
+            ./one/two/three",
         );
 
-        te.assert_output(&["e1", "--exec", "printf", "%s.%s\n"], "e1 e2.");
+        te.assert_output(&["e1", "--exec", "printf", "%s.%s\n"], "./e1 e2.");
     }
 }
 
@@ -1310,12 +1310,12 @@ fn test_exec_batch() {
 
         te.assert_output(
             &["foo", "--exec-batch", "echo", "{}"],
-            "a.foo one/b.foo one/two/C.Foo2 one/two/c.foo one/two/three/d.foo one/two/three/directory_foo",
+            "./a.foo ./one/b.foo ./one/two/C.Foo2 ./one/two/c.foo ./one/two/three/d.foo ./one/two/three/directory_foo",
         );
 
         te.assert_output(
             &["foo", "--exec-batch", "echo", "{/}"],
-            "a.foo b.foo C.Foo2 c.foo d.foo directory_foo",
+            "./a.foo ./b.foo ./C.Foo2 ./c.foo ./d.foo ./directory_foo",
         );
 
         te.assert_output(
@@ -1370,57 +1370,57 @@ fn test_exec_with_separator() {
 
     te.assert_output(
         &["--path-separator=#", "foo", "--exec", "echo", "{}"],
-        "a.foo
-            one#b.foo
-            one#two#C.Foo2
-            one#two#c.foo
-            one#two#three#d.foo
-            one#two#three#directory_foo",
+        ".#a.foo
+            .#one#b.foo
+            .#one#two#C.Foo2
+            .#one#two#c.foo
+            .#one#two#three#d.foo
+            .#one#two#three#directory_foo",
     );
 
     te.assert_output(
         &["--path-separator=#", "foo", "--exec", "echo", "{.}"],
-        "a
-            one#b
-            one#two#C
-            one#two#c
-            one#two#three#d
-            one#two#three#directory_foo",
+        ".#a
+            .#one#b
+            .#one#two#C
+            .#one#two#c
+            .#one#two#three#d
+            .#one#two#three#directory_foo",
     );
 
     te.assert_output(
         &["--path-separator=#", "foo", "--exec", "echo", "{/}"],
-        "a.foo
-            b.foo
-            C.Foo2
-            c.foo
-            d.foo
-            directory_foo",
+        ".#a.foo
+            .#b.foo
+            .#C.Foo2
+            .#c.foo
+            .#d.foo
+            .#directory_foo",
     );
 
     te.assert_output(
         &["--path-separator=#", "foo", "--exec", "echo", "{/.}"],
-        "a
-            b
-            C
-            c
-            d
-            directory_foo",
+        ".#a
+            .#b
+            .#C
+            .#c
+            .#d
+            .#directory_foo",
     );
 
     te.assert_output(
         &["--path-separator=#", "foo", "--exec", "echo", "{//}"],
-        ".
-            one
-            one#two
-            one#two
-            one#two#three
-            one#two#three",
+        ".#.
+            .#one
+            .#one#two
+            .#one#two
+            .#one#two#three
+            .#one#two#three",
     );
 
     te.assert_output(
         &["--path-separator=#", "e1", "--exec", "printf", "%s.%s\n"],
-        "e1 e2.",
+        ".#e1 e2.",
     );
 }
 
@@ -1739,24 +1739,24 @@ fn test_exec_invalid_utf8() {
 
     te.assert_output_raw(
         &["", "test1/", "--exec", "echo", "{}"],
-        b"test1/test_\xFEinvalid.txt\n",
+        b"./test1/test_\xFEinvalid.txt\n",
     );
 
     te.assert_output_raw(
         &["", "test1/", "--exec", "echo", "{/}"],
-        b"test_\xFEinvalid.txt\n",
+        b"./test_\xFEinvalid.txt\n",
     );
 
-    te.assert_output_raw(&["", "test1/", "--exec", "echo", "{//}"], b"test1\n");
+    te.assert_output_raw(&["", "test1/", "--exec", "echo", "{//}"], b"./test1\n");
 
     te.assert_output_raw(
         &["", "test1/", "--exec", "echo", "{.}"],
-        b"test1/test_\xFEinvalid\n",
+        b"./test1/test_\xFEinvalid\n",
     );
 
     te.assert_output_raw(
         &["", "test1/", "--exec", "echo", "{/.}"],
-        b"test_\xFEinvalid\n",
+        b"./test_\xFEinvalid\n",
     );
 }
 

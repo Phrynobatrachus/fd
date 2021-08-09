@@ -210,25 +210,40 @@ impl ArgumentTemplate {
     pub fn generate(&self, path: impl AsRef<Path>, path_separator: Option<&str>) -> OsString {
         use self::Token::*;
         let path = path.as_ref();
+        let is_relative = path.is_relative();
 
         match *self {
             ArgumentTemplate::Tokens(ref tokens) => {
                 let mut s = OsString::new();
                 for token in tokens {
                     match *token {
-                        Basename => s.push(Self::replace_separator(basename(path), path_separator)),
+                        // Basename and BasenameNoExt are always "relative"
+                        // even when generated from an absolute path
+                        Basename => s.push(Self::replace_separator(
+                            basename(path),
+                            path_separator,
+                            true,
+                        )),
                         BasenameNoExt => s.push(Self::replace_separator(
                             &remove_extension(basename(path).as_ref()),
                             path_separator,
+                            true,
                         )),
                         NoExt => s.push(Self::replace_separator(
                             &remove_extension(path),
                             path_separator,
+                            is_relative,
                         )),
-                        Parent => s.push(Self::replace_separator(&dirname(path), path_separator)),
-                        Placeholder => {
-                            s.push(Self::replace_separator(path.as_ref(), path_separator))
-                        }
+                        Parent => s.push(Self::replace_separator(
+                            &dirname(path),
+                            path_separator,
+                            is_relative,
+                        )),
+                        Placeholder => s.push(Self::replace_separator(
+                            path.as_ref(),
+                            path_separator,
+                            is_relative,
+                        )),
                         Text(ref string) => s.push(string),
                     }
                 }
@@ -242,14 +257,32 @@ impl ArgumentTemplate {
     /// is None, simply return a borrowed Cow<OsStr> of the input. Otherwise, the input is
     /// interpreted as a Path and its components are iterated through and re-joined into a new
     /// OsString.
-    fn replace_separator<'a>(path: &'a OsStr, path_separator: Option<&str>) -> Cow<'a, OsStr> {
-        // fast-path - no replacement necessary
+    fn replace_separator<'a>(
+        path: &'a OsStr,
+        path_separator: Option<&str>,
+        is_relative: bool,
+    ) -> Cow<'a, OsStr> {
         if path_separator.is_none() {
-            return Cow::Borrowed(path);
+            if is_relative {
+                let mut out = OsString::from(".");
+                if cfg!(unix) {
+                    out.push("/");
+                } else if cfg!(windows) {
+                    out.push("\\");
+                }
+                out.push(path);
+                return Cow::Owned(out);
+            } else {
+                // fast-path - no replacement necessary
+                return Cow::Borrowed(path);
+            }
         }
 
         let path_separator = path_separator.unwrap();
         let mut out = OsString::with_capacity(path.len());
+
+        let mut first_iter = true;
+
         let mut components = Path::new(path).components().peekable();
 
         while let Some(comp) = components.next() {
@@ -283,6 +316,11 @@ impl ArgumentTemplate {
 
                 // Everything else is joined normally, with a trailing separator if we're not last
                 _ => {
+                    if first_iter & is_relative {
+                        out.push(".");
+                        out.push(path_separator);
+                        first_iter = false;
+                    }
                     out.push(comp.as_os_str());
                     if components.peek().is_some() {
                         out.push(path_separator);
@@ -422,8 +460,8 @@ mod tests {
             };
         }
 
-        check!("foo", "foo");
-        check!("foo/bar", "foo#bar");
+        check!("foo", ".#foo");
+        check!("foo/bar", ".#foo#bar");
         check!("/foo/bar/baz", "#foo#bar#baz");
     }
 

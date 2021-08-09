@@ -119,6 +119,10 @@ fn print_entry_uncolorized(
     } else {
         // Print path as raw bytes, allowing invalid UTF-8 filenames to be passed to other processes
         let separator = if config.null_separator { b"\0" } else { b"\n" };
+        if path.is_relative() {
+            stdout.write_all(b"./")?;
+        }
+
         stdout.write_all(path.as_os_str().as_bytes())?;
         stdout.write_all(separator)
     }
